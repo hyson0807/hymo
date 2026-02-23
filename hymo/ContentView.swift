@@ -53,12 +53,28 @@ struct ContentView: View {
     @State private var dragBaseOffset: CGFloat = 0
 
     @State private var headerHeight: CGFloat = 0
+    @State private var hasUserResized = UserDefaults.standard.bool(forKey: "hasUserResized")
+    @State private var userWidth: CGFloat = {
+        let v = UserDefaults.standard.double(forKey: "userWindowWidth")
+        return v > 0 ? v : 320
+    }()
+    @State private var userHeight: CGFloat = {
+        let v = UserDefaults.standard.double(forKey: "userWindowHeight")
+        return v > 0 ? v : 200
+    }()
+
     private let minWindowHeight: CGFloat = 120
-    private let windowWidth: CGFloat = 320
+    private let defaultWindowWidth: CGFloat = 320
+    private let minWindowWidth: CGFloat = 260
+    private let maxWindowWidth: CGFloat = 600
     private let memoListPadding: CGFloat = GlassTheme.cardSpacing
 
     private var maxWindowHeight: CGFloat {
         (NSScreen.main?.visibleFrame.height ?? 600) * 0.85
+    }
+
+    private var effectiveWidth: CGFloat {
+        hasUserResized ? userWidth : defaultWindowWidth
     }
 
     private var memoListHeight: CGFloat {
@@ -68,12 +84,17 @@ struct ContentView: View {
         return memoHeights.values.reduce(0, +) + spacingHeight + verticalPadding
     }
 
-    private var totalHeight: CGFloat {
+    private var autoHeight: CGFloat {
         min(max(memoListHeight + headerHeight, minWindowHeight), maxWindowHeight)
     }
 
+    private var effectiveHeight: CGFloat {
+        hasUserResized ? userHeight : autoHeight
+    }
+
     private var scrollEnabled: Bool {
-        memoListHeight + headerHeight > maxWindowHeight
+        if hasUserResized { return true }
+        return memoListHeight + headerHeight > maxWindowHeight
     }
 
     var body: some View {
@@ -168,14 +189,32 @@ struct ContentView: View {
                 }
             }
         }
-        .frame(width: windowWidth, height: totalHeight)
+        .frame(width: effectiveWidth, height: effectiveHeight)
+        .overlay(alignment: .bottomTrailing) {
+            ResizeHandleView(
+                userWidth: $userWidth,
+                userHeight: $userHeight,
+                hasUserResized: $hasUserResized,
+                minWidth: minWindowWidth, maxWidth: maxWindowWidth,
+                minHeight: minWindowHeight, maxHeight: maxWindowHeight,
+                defaultWidth: defaultWindowWidth
+            )
+        }
         .background(WindowAccessor(window: $hostWindow))
-        .onChange(of: totalHeight) { _, newHeight in
-            resizeWindow(to: NSSize(width: windowWidth, height: newHeight))
+        .onChange(of: effectiveHeight) { _, _ in
+            resizeWindow(to: NSSize(width: effectiveWidth, height: effectiveHeight))
+        }
+        .onChange(of: effectiveWidth) { _, _ in
+            resizeWindow(to: NSSize(width: effectiveWidth, height: effectiveHeight))
         }
         .onChange(of: hostWindow) { _, newWindow in
             guard newWindow != nil else { return }
-            resizeWindow(to: NSSize(width: windowWidth, height: totalHeight))
+            resizeWindow(to: NSSize(width: effectiveWidth, height: effectiveHeight))
+        }
+        .onChange(of: hasUserResized) { _, isManual in
+            if !isManual {
+                resizeWindow(to: NSSize(width: defaultWindowWidth, height: autoHeight))
+            }
         }
         .onChange(of: dragOffset) { _, _ in
             handleDragReorder()
@@ -232,6 +271,7 @@ struct ContentView: View {
             width: size.width,
             height: size.height
         )
+        guard window.frame != newFrame else { return }
         window.setFrame(newFrame, display: true, animate: false)
     }
 }
