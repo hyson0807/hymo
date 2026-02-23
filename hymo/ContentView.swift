@@ -55,7 +55,7 @@ struct ContentView: View {
     @State private var headerHeight: CGFloat = 0
     private let minWindowHeight: CGFloat = 120
     private let windowWidth: CGFloat = 320
-    private let memoListPadding: CGFloat = 8
+    private let memoListPadding: CGFloat = GlassTheme.cardSpacing
 
     private var maxWindowHeight: CGFloat {
         (NSScreen.main?.visibleFrame.height ?? 600) * 0.85
@@ -64,8 +64,8 @@ struct ContentView: View {
     private var memoListHeight: CGFloat {
         let memoCount = CGFloat(memoHeights.count)
         let spacingHeight = max(0, memoCount - 1) * memoListPadding
-        let extraHeight = memoListPadding * 2 + spacingHeight
-        return memoHeights.values.reduce(0, +) + extraHeight
+        let verticalPadding = (memoListPadding + GlassTheme.shadowRadius) * 2
+        return memoHeights.values.reduce(0, +) + spacingHeight + verticalPadding
     }
 
     private var totalHeight: CGFloat {
@@ -82,26 +82,38 @@ struct ContentView: View {
             VStack(spacing: 0) {
                 HStack {
                     Text("Hymo")
-                        .font(.headline)
+                        .font(.system(.headline, design: .rounded, weight: .semibold))
                     Spacer()
                     SettingsLink {
                         Image(systemName: "gearshape")
+                            .font(.system(size: 13, weight: .medium))
+                            .frame(width: 28, height: 28)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(GlassButtonStyle())
                     .help("Settings")
                     Button {
                         let memo = store.addMemo()
                         focusedMemoID = memo.id
                     } label: {
                         Image(systemName: "plus")
+                            .font(.system(size: 13, weight: .medium))
+                            .frame(width: 28, height: 28)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(GlassButtonStyle())
                     .help("New memo")
                 }
                 .padding(.horizontal)
                 .padding(.vertical, 10)
 
-                Divider()
+                Rectangle()
+                    .fill(
+                        LinearGradient(
+                            colors: [.primary.opacity(0), .primary.opacity(0.06), .primary.opacity(0)],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .frame(height: 0.5)
             }
             .background(
                 GeometryReader { geo in
@@ -114,10 +126,17 @@ struct ContentView: View {
             if store.memos.isEmpty {
                 Spacer()
                     .onAppear { memoHeights = [:] }
-                Text("No memos yet.\nTap + to create one.")
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(.secondary)
-                    .font(.subheadline)
+                VStack(spacing: 6) {
+                    Image(systemName: "note.text")
+                        .font(.system(size: 32, weight: .light))
+                        .foregroundStyle(.tertiary)
+                    Text("No memos yet")
+                        .font(.system(.subheadline, design: .rounded))
+                        .foregroundStyle(.secondary)
+                    Text("Tap + to create one")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
                 Spacer()
             } else {
                 ScrollView {
@@ -132,10 +151,12 @@ struct ContentView: View {
                             )
                             .zIndex(draggingMemoID == memo.id ? 1 : 0)
                             .offset(y: draggingMemoID == memo.id ? dragOffset - dragBaseOffset : 0)
-                            .opacity(draggingMemoID == memo.id ? 0.7 : 1.0)
+                            .opacity(draggingMemoID == memo.id ? 0.85 : 1.0)
+                            .scaleEffect(draggingMemoID == memo.id ? 1.02 : 1.0)
                         }
                     }
-                    .padding(memoListPadding)
+                    .padding(.horizontal, memoListPadding)
+                    .padding(.vertical, memoListPadding + GlassTheme.shadowRadius)
                     .animation(draggingMemoID == nil ? .easeInOut(duration: 0.2) : nil, value: store.sortedMemos.map(\.id))
                     .animation(.easeInOut(duration: 0.2), value: store.sortedMemos.map(\.isCollapsed))
                 }

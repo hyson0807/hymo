@@ -34,7 +34,7 @@ struct MemoCardView: View {
                         .frame(width: 16, height: 16)
                         .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(GlassButtonStyle())
                 .help(memo.isCollapsed ? "Expand" : "Collapse")
 
                 Spacer()
@@ -51,7 +51,7 @@ struct MemoCardView: View {
                         .foregroundStyle(showCopied ? .green : .secondary)
                         .contentTransition(.symbolEffect(.replace))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(GlassButtonStyle())
                 .help("Copy")
 
                 Button {
@@ -60,7 +60,7 @@ struct MemoCardView: View {
                     Image(systemName: memo.isPinned ? "pin.fill" : "pin")
                         .foregroundStyle(memo.isPinned ? .orange : .secondary)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(GlassButtonStyle())
                 .help(memo.isPinned ? "Unpin" : "Pin")
 
                 Button {
@@ -69,15 +69,15 @@ struct MemoCardView: View {
                     Image(systemName: "trash")
                         .foregroundStyle(.secondary)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(GlassButtonStyle())
                 .help("Delete")
 
                 Image(systemName: "line.3.horizontal")
                     .foregroundStyle(isHandleHovered ? .primary : .tertiary)
                     .padding(4)
                     .background(
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(isHandleHovered ? Color.gray.opacity(0.2) : Color.clear)
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .fill(isHandleHovered ? Color.primary.opacity(0.08) : Color.clear)
                     )
                     .onHover { hovering in
                         isHandleHovered = hovering
@@ -110,25 +110,16 @@ struct MemoCardView: View {
             } else {
                 TextEditor(text: $localText)
                     .font(.body)
-                    .scrollContentBackground(.hidden)
                     .scrollDisabled(false)
                     .frame(minHeight: 40, maxHeight: 180)
-                    .padding(4)
-                    .background(Color(nsColor: .textBackgroundColor).opacity(0.5))
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                    .glassTextEditor()
                     .focused(isFocused, equals: memo.id)
                     .onChange(of: localText) { _, newValue in
                         store.updateContent(for: memo.id, content: newValue)
                     }
             }
         }
-        .padding(8)
-        .background(Color(nsColor: .controlBackgroundColor))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-        .overlay(
-            RoundedRectangle(cornerRadius: 8)
-                .stroke(Color.gray.opacity(0.2))
-        )
+        .glassCard()
         .contentShape(Rectangle())
         .background(
             GeometryReader { geo in
