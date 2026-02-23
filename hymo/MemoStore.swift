@@ -51,6 +51,11 @@ final class MemoStore {
         memos[index].isCollapsed.toggle()
     }
 
+    func updateCardHeight(for id: UUID, height: CGFloat?) {
+        guard let index = memos.firstIndex(where: { $0.id == id }) else { return }
+        memos[index].cardHeight = height
+    }
+
     // MARK: - Pin
 
     func togglePin(_ memo: Memo) {

@@ -11,6 +11,9 @@ struct MemoCardView: View {
     @State private var localText: String
     @State private var isHandleHovered = false
     @State private var showCopied = false
+    @State private var isCardResizeHovered = false
+    @State private var dragStartHeight: CGFloat = 0
+    @State private var measuredEditorHeight: CGFloat = 80
 
     init(memo: Memo, store: MemoStore, isFocused: FocusState<UUID?>.Binding, draggingMemoID: Binding<UUID?>, dragOffset: Binding<CGFloat>) {
         self.memo = memo
@@ -110,12 +113,56 @@ struct MemoCardView: View {
             } else {
                 TextEditor(text: $localText)
                     .font(.body)
-                    .scrollDisabled(false)
-                    .frame(minHeight: 40, maxHeight: 180)
+                    .scrollDisabled(memo.cardHeight == nil)
+                    .frame(minHeight: 40)
+                    .frame(height: memo.cardHeight)
                     .glassTextEditor()
                     .focused(isFocused, equals: memo.id)
                     .onChange(of: localText) { _, newValue in
                         store.updateContent(for: memo.id, content: newValue)
+                    }
+                    .background(
+                        GeometryReader { geo in
+                            Color.clear
+                                .onAppear { measuredEditorHeight = geo.size.height }
+                                .onChange(of: geo.size.height) { _, h in measuredEditorHeight = h }
+                        }
+                    )
+
+                // Card resize handle
+                Rectangle()
+                    .fill(Color.clear)
+                    .frame(height: 10)
+                    .frame(maxWidth: .infinity)
+                    .contentShape(Rectangle())
+                    .overlay {
+                        Capsule()
+                            .fill(.primary.opacity(isCardResizeHovered ? 0.3 : 0.1))
+                            .frame(width: 30, height: 3)
+                    }
+                    .onHover { hovering in
+                        isCardResizeHovered = hovering
+                        if hovering {
+                            NSCursor.resizeUpDown.push()
+                        } else {
+                            NSCursor.pop()
+                        }
+                    }
+                    .gesture(
+                        DragGesture()
+                            .onChanged { value in
+                                if dragStartHeight == 0 {
+                                    dragStartHeight = memo.cardHeight ?? measuredEditorHeight
+                                }
+                                let newHeight = max(40, dragStartHeight + value.translation.height)
+                                store.updateCardHeight(for: memo.id, height: newHeight)
+                            }
+                            .onEnded { _ in
+                                dragStartHeight = 0
+                            }
+                    )
+                    .onTapGesture(count: 2) {
+                        store.updateCardHeight(for: memo.id, height: nil)
                     }
             }
         }
