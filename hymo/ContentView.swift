@@ -1,6 +1,13 @@
 import SwiftUI
 
-// MARK: - PreferenceKey for measuring list height
+// MARK: - PreferenceKeys for measuring heights
+
+struct HeaderHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
 
 struct MemoHeightKey: PreferenceKey {
     static var defaultValue: [UUID: CGFloat] = [:]
@@ -45,12 +52,10 @@ struct ContentView: View {
     @State private var dragOffset: CGFloat = 0
     @State private var dragBaseOffset: CGFloat = 0
 
-    private let headerHeight: CGFloat = 50
+    @State private var headerHeight: CGFloat = 0
     private let minWindowHeight: CGFloat = 120
     private let windowWidth: CGFloat = 320
-    private let memoListBottomPadding: CGFloat = 12
-    private let memoListInterItemSpacing: CGFloat = 8
-    private let memoListVerticalPadding: CGFloat = 16
+    private let memoListPadding: CGFloat = 8
 
     private var maxWindowHeight: CGFloat {
         (NSScreen.main?.visibleFrame.height ?? 600) * 0.85
@@ -58,8 +63,8 @@ struct ContentView: View {
 
     private var memoListHeight: CGFloat {
         let memoCount = CGFloat(memoHeights.count)
-        let spacingHeight = max(0, memoCount - 1) * memoListInterItemSpacing
-        let extraHeight = memoListVerticalPadding + memoListBottomPadding + spacingHeight
+        let spacingHeight = max(0, memoCount - 1) * memoListPadding
+        let extraHeight = memoListPadding * 2 + spacingHeight
         return memoHeights.values.reduce(0, +) + extraHeight
     }
 
@@ -74,28 +79,36 @@ struct ContentView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Header
-            HStack {
-                Text("Hymo")
-                    .font(.headline)
-                Spacer()
-                SettingsLink {
-                    Image(systemName: "gearshape")
+            VStack(spacing: 0) {
+                HStack {
+                    Text("Hymo")
+                        .font(.headline)
+                    Spacer()
+                    SettingsLink {
+                        Image(systemName: "gearshape")
+                    }
+                    .buttonStyle(.plain)
+                    .help("Settings")
+                    Button {
+                        let memo = store.addMemo()
+                        focusedMemoID = memo.id
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                    .buttonStyle(.plain)
+                    .help("New memo")
                 }
-                .buttonStyle(.plain)
-                .help("Settings")
-                Button {
-                    let memo = store.addMemo()
-                    focusedMemoID = memo.id
-                } label: {
-                    Image(systemName: "plus")
-                }
-                .buttonStyle(.plain)
-                .help("New memo")
-            }
-            .padding(.horizontal)
-            .padding(.vertical, 10)
+                .padding(.horizontal)
+                .padding(.vertical, 10)
 
-            Divider()
+                Divider()
+            }
+            .background(
+                GeometryReader { geo in
+                    Color.clear.preference(key: HeaderHeightKey.self, value: geo.size.height)
+                }
+            )
+            .onPreferenceChange(HeaderHeightKey.self) { headerHeight = $0 }
 
             // Memo list
             if store.memos.isEmpty {
@@ -108,7 +121,7 @@ struct ContentView: View {
                 Spacer()
             } else {
                 ScrollView {
-                    VStack(spacing: 8) {
+                    VStack(spacing: memoListPadding) {
                         ForEach(store.sortedMemos) { memo in
                             MemoCardView(
                                 memo: memo,
@@ -121,10 +134,8 @@ struct ContentView: View {
                             .offset(y: draggingMemoID == memo.id ? dragOffset - dragBaseOffset : 0)
                             .opacity(draggingMemoID == memo.id ? 0.7 : 1.0)
                         }
-                        Spacer().frame(height: memoListBottomPadding)
                     }
-                    .padding(.horizontal)
-                    .padding(.vertical, 8)
+                    .padding(memoListPadding)
                     .animation(draggingMemoID == nil ? .easeInOut(duration: 0.2) : nil, value: store.sortedMemos.map(\.id))
                     .animation(.easeInOut(duration: 0.2), value: store.sortedMemos.map(\.isCollapsed))
                 }
@@ -162,7 +173,7 @@ struct ContentView: View {
 
         let effectiveOffset = dragOffset - dragBaseOffset
         let currentHeight = memoHeights[draggingID] ?? 0
-        let spacing = memoListInterItemSpacing
+        let spacing = memoListPadding
 
         if effectiveOffset > 0 {
             // Dragging down — check next card
