@@ -1,17 +1,11 @@
-//
-//  hymoApp.swift
-//  hymo
-//
-//  Created by hyson on 2/23/26.
-//
-
 import SwiftUI
 
 @main
 struct hymoApp: App {
     var body: some Scene {
-        WindowGroup {
+        MenuBarExtra("Hymo", systemImage: "note.text") {
             ContentView()
         }
+        .menuBarExtraStyle(.window) // 팝오버를 창 스타일로 표시
     }
 }
