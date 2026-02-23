@@ -78,6 +78,11 @@ struct ContentView: View {
                 Text("Hymo")
                     .font(.headline)
                 Spacer()
+                SettingsLink {
+                    Image(systemName: "gearshape")
+                }
+                .buttonStyle(.plain)
+                .help("Settings")
                 Button {
                     let memo = store.addMemo()
                     focusedMemoID = memo.id

@@ -7,5 +7,9 @@ struct hymoApp: App {
             ContentView()
         }
         .menuBarExtraStyle(.window) // 팝오버를 창 스타일로 표시
+
+        Settings {
+            SettingsView()
+        }
     }
 }
