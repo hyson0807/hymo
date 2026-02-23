@@ -1,9 +1,4 @@
 import SwiftUI
-import UniformTypeIdentifiers
-
-extension UTType {
-    static let memoReorder = UTType(exportedAs: "com.hysonworks.hymo.memo-reorder")
-}
 
 struct MemoCardView: View {
 
@@ -11,15 +6,17 @@ struct MemoCardView: View {
     let store: MemoStore
     var isFocused: FocusState<UUID?>.Binding
     @Binding var draggingMemoID: UUID?
+    @Binding var dragOffset: CGFloat
 
     @State private var localText: String
     @State private var isHandleHovered = false
 
-    init(memo: Memo, store: MemoStore, isFocused: FocusState<UUID?>.Binding, draggingMemoID: Binding<UUID?>) {
+    init(memo: Memo, store: MemoStore, isFocused: FocusState<UUID?>.Binding, draggingMemoID: Binding<UUID?>, dragOffset: Binding<CGFloat>) {
         self.memo = memo
         self.store = store
         self.isFocused = isFocused
         self._draggingMemoID = draggingMemoID
+        self._dragOffset = dragOffset
         self._localText = State(initialValue: memo.content)
     }
 
@@ -69,18 +66,21 @@ struct MemoCardView: View {
                     .onHover { hovering in
                         isHandleHovered = hovering
                     }
-                    .onDrag {
-                        draggingMemoID = memo.id
-                        let provider = NSItemProvider()
-                        provider.registerDataRepresentation(
-                            forTypeIdentifier: UTType.memoReorder.identifier,
-                            visibility: .ownProcess
-                        ) { completion in
-                            completion(Data(), nil)
-                            return nil
-                        }
-                        return provider
-                    }
+                    .gesture(
+                        DragGesture(coordinateSpace: .named("memoList"))
+                            .onChanged { value in
+                                if draggingMemoID == nil {
+                                    draggingMemoID = memo.id
+                                }
+                                dragOffset = value.translation.height
+                            }
+                            .onEnded { _ in
+                                withAnimation(.easeOut(duration: 0.15)) {
+                                    draggingMemoID = nil
+                                }
+                                dragOffset = 0
+                            }
+                    )
             }
             .font(.caption)
 
@@ -122,33 +122,5 @@ struct MemoCardView: View {
                 )
             }
         )
-        .opacity(draggingMemoID == memo.id ? 0.4 : 1.0)
-        .onDrop(of: [.memoReorder], delegate: MemoDropDelegate(
-            targetMemo: memo,
-            store: store,
-            draggingMemoID: $draggingMemoID
-        ))
-    }
-}
-
-struct MemoDropDelegate: DropDelegate {
-    let targetMemo: Memo
-    let store: MemoStore
-    @Binding var draggingMemoID: UUID?
-
-    func dropEntered(info: DropInfo) {
-        guard let draggingID = draggingMemoID, draggingID != targetMemo.id else { return }
-        DispatchQueue.main.async {
-            store.reorderMemo(draggingID, to: targetMemo.id)
-        }
-    }
-
-    func dropUpdated(info: DropInfo) -> DropProposal? {
-        DropProposal(operation: .move)
-    }
-
-    func performDrop(info: DropInfo) -> Bool {
-        draggingMemoID = nil
-        return true
     }
 }

@@ -42,6 +42,8 @@ struct ContentView: View {
     @State private var draggingMemoID: UUID?
     @State private var memoHeights: [UUID: CGFloat] = [:]
     @State private var hostWindow: NSWindow?
+    @State private var dragOffset: CGFloat = 0
+    @State private var dragBaseOffset: CGFloat = 0
 
     private let headerHeight: CGFloat = 50
     private let minWindowHeight: CGFloat = 120
@@ -107,16 +109,21 @@ struct ContentView: View {
                                 memo: memo,
                                 store: store,
                                 isFocused: $focusedMemoID,
-                                draggingMemoID: $draggingMemoID
+                                draggingMemoID: $draggingMemoID,
+                                dragOffset: $dragOffset
                             )
+                            .zIndex(draggingMemoID == memo.id ? 1 : 0)
+                            .offset(y: draggingMemoID == memo.id ? dragOffset - dragBaseOffset : 0)
+                            .opacity(draggingMemoID == memo.id ? 0.7 : 1.0)
                         }
                         Spacer().frame(height: memoListBottomPadding)
                     }
                     .padding(.horizontal)
                     .padding(.vertical, 8)
-                    .animation(.easeInOut(duration: 0.2), value: store.sortedMemos.map(\.id))
+                    .animation(draggingMemoID == nil ? .easeInOut(duration: 0.2) : nil, value: store.sortedMemos.map(\.id))
                     .animation(.easeInOut(duration: 0.2), value: store.sortedMemos.map(\.isCollapsed))
                 }
+                .coordinateSpace(.named("memoList"))
                 .scrollDisabled(!scrollEnabled)
                 .scrollBounceBehavior(.basedOnSize)
                 .onPreferenceChange(MemoHeightKey.self) { heights in
@@ -132,6 +139,51 @@ struct ContentView: View {
         .onChange(of: hostWindow) { _, newWindow in
             guard newWindow != nil else { return }
             resizeWindow(to: NSSize(width: windowWidth, height: totalHeight))
+        }
+        .onChange(of: dragOffset) { _, _ in
+            handleDragReorder()
+        }
+        .onChange(of: draggingMemoID) { _, newValue in
+            if newValue == nil {
+                dragBaseOffset = 0
+            }
+        }
+    }
+
+    private func handleDragReorder() {
+        guard let draggingID = draggingMemoID else { return }
+        let sorted = store.sortedMemos
+        guard let currentIndex = sorted.firstIndex(where: { $0.id == draggingID }) else { return }
+
+        let effectiveOffset = dragOffset - dragBaseOffset
+        let currentHeight = memoHeights[draggingID] ?? 0
+        let spacing = memoListInterItemSpacing
+
+        if effectiveOffset > 0 {
+            // Dragging down — check next card
+            let nextIndex = sorted.index(after: currentIndex)
+            guard nextIndex < sorted.endIndex else { return }
+            let neighbor = sorted[nextIndex]
+            // Don't cross pin boundary
+            guard neighbor.isPinned == sorted[currentIndex].isPinned else { return }
+            let neighborHeight = memoHeights[neighbor.id] ?? 0
+            let threshold = (currentHeight + neighborHeight) / 2 + spacing
+            if effectiveOffset > threshold {
+                store.reorderMemo(draggingID, to: neighbor.id)
+                dragBaseOffset += neighborHeight + spacing
+            }
+        } else if effectiveOffset < 0 {
+            // Dragging up — check previous card
+            guard currentIndex > sorted.startIndex else { return }
+            let prevIndex = sorted.index(before: currentIndex)
+            let neighbor = sorted[prevIndex]
+            guard neighbor.isPinned == sorted[currentIndex].isPinned else { return }
+            let neighborHeight = memoHeights[neighbor.id] ?? 0
+            let threshold = (currentHeight + neighborHeight) / 2 + spacing
+            if -effectiveOffset > threshold {
+                store.reorderMemo(draggingID, to: neighbor.id)
+                dragBaseOffset -= neighborHeight + spacing
+            }
         }
     }
 
