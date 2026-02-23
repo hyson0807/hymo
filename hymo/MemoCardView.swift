@@ -10,6 +10,7 @@ struct MemoCardView: View {
 
     @State private var localText: String
     @State private var isHandleHovered = false
+    @State private var showCopied = false
 
     init(memo: Memo, store: MemoStore, isFocused: FocusState<UUID?>.Binding, draggingMemoID: Binding<UUID?>, dragOffset: Binding<CGFloat>) {
         self.memo = memo
@@ -37,6 +38,21 @@ struct MemoCardView: View {
                 .help(memo.isCollapsed ? "Expand" : "Collapse")
 
                 Spacer()
+
+                Button {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(localText, forType: .string)
+                    showCopied = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                        showCopied = false
+                    }
+                } label: {
+                    Image(systemName: showCopied ? "checkmark" : "doc.on.doc")
+                        .foregroundStyle(showCopied ? .green : .secondary)
+                        .contentTransition(.symbolEffect(.replace))
+                }
+                .buttonStyle(.plain)
+                .help("Copy")
 
                 Button {
                     store.togglePin(memo)
