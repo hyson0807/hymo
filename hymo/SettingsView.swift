@@ -1,7 +1,9 @@
 import ServiceManagement
+import Sparkle
 import SwiftUI
 
 struct SettingsView: View {
+    var updaterViewModel: UpdaterViewModel
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
 
     var body: some View {
@@ -22,6 +24,22 @@ struct SettingsView: View {
             Text("Automatically open Hymo when you log in.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+
+            Divider()
+
+            HStack {
+                Text("Updates")
+                Spacer()
+                Button("Check for Updates…") {
+                    updaterViewModel.checkForUpdates()
+                }
+                .disabled(!updaterViewModel.canCheckForUpdates)
+            }
+
+            Toggle("Automatically check for updates", isOn: Binding(
+                get: { updaterViewModel.updaterController.updater.automaticallyChecksForUpdates },
+                set: { updaterViewModel.updaterController.updater.automaticallyChecksForUpdates = $0 }
+            ))
         }
         .formStyle(.grouped)
         .frame(width: 300)

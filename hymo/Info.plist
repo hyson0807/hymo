@@ -5,5 +5,9 @@
 <dict>
     <key>LSUIElement</key>
     <true/>
+    <key>SUFeedURL</key>
+    <string>https://hyson.kr/downloads/appcast.xml</string>
+    <key>SUPublicEDKey</key>
+    <string>5ptl+MhlpmiZeoX2aVmhWUuxGMtGTfIi2Nv7tBXe+BM=</string>
   </dict>
 </plist>
