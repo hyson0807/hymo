@@ -14,8 +14,8 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
-            Section("일반") {
-                Toggle("로그인 시 자동 실행", isOn: $launchAtLogin)
+            Section("General") {
+                Toggle("Launch at Login", isOn: $launchAtLogin)
                     .onChange(of: launchAtLogin) { _, newValue in
                         do {
                             if newValue {
@@ -29,12 +29,12 @@ struct SettingsView: View {
                     }
             }
 
-            Section("업데이트") {
-                Toggle("자동으로 업데이트 확인", isOn: Binding(
+            Section("Updates") {
+                Toggle("Automatically Check for Updates", isOn: Binding(
                     get: { updaterViewModel.updaterController.updater.automaticallyChecksForUpdates },
                     set: { updaterViewModel.updaterController.updater.automaticallyChecksForUpdates = $0 }
                 ))
-                Button("업데이트 확인…") {
+                Button("Check for Updates…") {
                     updaterViewModel.checkForUpdates()
                 }
                 .disabled(!updaterViewModel.canCheckForUpdates)
@@ -43,7 +43,7 @@ struct SettingsView: View {
             Section {
                 Link(destination: URL(string: "https://hyson.kr/contact")!) {
                     HStack {
-                        Text("문의사항")
+                        Text("Contact")
                             .foregroundStyle(.primary)
                         Spacer()
                         Image(systemName: "arrow.up.right")
