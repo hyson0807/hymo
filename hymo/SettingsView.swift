@@ -25,5 +25,8 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .frame(width: 300)
+        .onAppear {
+            NSApp.activate(ignoringOtherApps: true)
+        }
     }
 }
