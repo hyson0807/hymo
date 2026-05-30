@@ -1,0 +1,14 @@
+# macOS
+.DS_Store
+
+# Xcode 사용자별 상태
+**/xcuserdata/
+*.xcuserstate
+
+# 빌드 산출물 (커밋하지 않음 — 배포는 hyson_kr로)
+hymo_app.app/
+*.app/
+*.dmg
+*.zip
+build/
+DerivedData/
