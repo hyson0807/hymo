@@ -43,10 +43,24 @@
 
 ---
 
-## 릴리스 런북 (CLI, 복붙용)
+## 릴리스 — 한 줄로 (권장)
 
-> 아래는 1.7(8) 릴리스 때 실제로 쓴 절차. `NEW_SHORT`/`NEW_BUILD`만 바꿔 그대로 반복하면 된다.
-> (Xcode Organizer의 Archive→Distribute 없이 CLI로 전부 가능.)
+코드 변경을 **커밋한 뒤**, 버전만 적어 실행하면 끝. (빌드 번호는 라이브 appcast +1로 자동 계산)
+
+```sh
+cd /Users/hyson/hyson_works/PROJECTS/hymo
+./release.sh 1.8        # ← 새 버전만 입력
+```
+
+`release.sh`가 자동으로: 사전검사(작업트리 깨끗·origin/main 동기화) → 버전 범프 → Release 빌드+검증
+→ zip/dmg → Sparkle 서명 → appcast 갱신 → hyson_kr 복사 → 커밋 → **(y/n 확인 후) push** → 라이브 검증.
+머지는 안 한다(검사만 하고 뒤처졌으면 중단) — `git merge origin/main`은 직접.
+
+---
+
+## 릴리스 런북 (수동, 스크립트가 막힐 때 참고)
+
+> `release.sh`가 그대로 실행하는 절차. 디버깅하거나 손으로 할 때 참고. (Xcode Organizer 없이 CLI로 전부 가능.)
 
 ```sh
 set -e
