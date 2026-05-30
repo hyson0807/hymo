@@ -4,12 +4,13 @@ import AppKit
 @main
 struct hymoApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    @State private var updaterViewModel = UpdaterViewModel()
 
     var body: some Scene {
         // 메뉴바 팝업은 AppDelegate가 직접 만든 NSPanel로 제어한다.
         // 여기서는 Settings 화면(SettingsLink 대상)만 선언한다.
         Settings {
-            SettingsView()
+            SettingsView(updaterViewModel: updaterViewModel)
         }
     }
 }
@@ -37,7 +38,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private func setupStatusItem() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         if let button = item.button {
-            let image = NSImage(systemSymbolName: "note.text", accessibilityDescription: "Hymo")
+            let image = NSImage(named: "MenuBarIcon") ?? NSImage(systemSymbolName: "note.text", accessibilityDescription: "Hymo")
             image?.isTemplate = true
             button.image = image
             button.action = #selector(togglePanel)
