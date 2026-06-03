@@ -2,6 +2,31 @@ import ServiceManagement
 import Sparkle
 import SwiftUI
 
+// MARK: - 설정 창을 다른 앱 위로 띄우는 구성기
+
+/// accessory(메뉴바) 앱이라 설정 창이 다른 앱 뒤로 숨는 경우가 있어,
+/// 창을 잡아 floating 레벨로 올리고 맨 앞으로 가져온다.
+private struct SettingsWindowConfigurator: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        let view = _ConfiguratorView()
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {}
+
+    final class _ConfiguratorView: NSView {
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            guard let window else { return }
+            window.level = .floating
+            window.collectionBehavior.insert(.canJoinAllSpaces)
+            NSApp.activate(ignoringOtherApps: true)
+            window.makeKeyAndOrderFront(nil)
+            window.orderFrontRegardless()
+        }
+    }
+}
+
 struct SettingsView: View {
     var updaterViewModel: UpdaterViewModel
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
@@ -70,8 +95,6 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .frame(width: 320)
-        .onAppear {
-            NSApp.activate(ignoringOtherApps: true)
-        }
+        .background(SettingsWindowConfigurator())
     }
 }
