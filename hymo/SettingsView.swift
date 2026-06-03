@@ -5,6 +5,7 @@ import SwiftUI
 struct SettingsView: View {
     var updaterViewModel: UpdaterViewModel
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
+    @Bindable private var chatIdentity = ChatIdentity.shared
 
     private var appVersion: String {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
@@ -27,6 +28,10 @@ struct SettingsView: View {
                             launchAtLogin = SMAppService.mainApp.status == .enabled
                         }
                     }
+            }
+
+            Section("Chat") {
+                TextField("닉네임", text: $chatIdentity.nickname, prompt: Text("채팅에서 보일 이름"))
             }
 
             Section("Updates") {

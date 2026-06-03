@@ -46,6 +46,7 @@ struct ContentView: View {
 
     @State private var store = MemoStore()
     @State private var serverMonitor = ServerMonitor()
+    @State private var chatStore = ChatStore()
     @State private var activeTab: AppTab = .memos
     @State private var serverHeights: [String: CGFloat] = [:]
     @FocusState private var focusedMemoID: UUID?
@@ -70,6 +71,7 @@ struct ContentView: View {
     private let defaultWindowWidth: CGFloat = 320
     private let minWindowWidth: CGFloat = 260
     private let maxWindowWidth: CGFloat = 600
+    private let chatWindowHeight: CGFloat = 420
     private let memoListPadding: CGFloat = GlassTheme.cardSpacing
 
     private var maxWindowHeight: CGFloat {
@@ -96,7 +98,10 @@ struct ContentView: View {
     }
 
     private var effectiveHeight: CGFloat {
-        hasUserResized ? userHeight : autoHeight
+        if hasUserResized { return userHeight }
+        // 채팅 탭은 내용 길이와 무관하게 고정 높이(스트림 + 입력바).
+        if activeTab == .chat { return chatWindowHeight }
+        return autoHeight
     }
 
     private var scrollEnabled: Bool {
@@ -121,7 +126,7 @@ struct ContentView: View {
             }
             .buttonStyle(GlassButtonStyle())
             .help("New memo")
-        } else {
+        } else if activeTab == .servers {
             Button {
                 serverMonitor.showSystem.toggle()
             } label: {
@@ -182,6 +187,8 @@ struct ContentView: View {
                 memoSection
             case .servers:
                 serverSection
+            case .chat:
+                ChatTabView(store: chatStore)
             }
         }
         .frame(width: effectiveWidth, height: effectiveHeight)
@@ -225,9 +232,15 @@ struct ContentView: View {
             } else {
                 serverMonitor.stopAutoRefresh()
             }
+            if tab == .chat {
+                chatStore.connectIfNeeded()
+            } else {
+                chatStore.disconnect()
+            }
         }
         .onDisappear {
             serverMonitor.stopAutoRefresh()
+            chatStore.disconnect()
         }
     }
 
