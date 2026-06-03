@@ -32,16 +32,16 @@ private struct NicknameSetupView: View {
             Image(systemName: "person.crop.circle")
                 .font(.system(size: 32, weight: .light))
                 .foregroundStyle(.tertiary)
-            Text("채팅에서 쓸 이름을 정해주세요")
+            Text("Choose a name for chat")
                 .font(.system(.subheadline, design: .rounded))
                 .foregroundStyle(.secondary)
-            TextField("닉네임", text: $draft)
+            TextField("Nickname", text: $draft)
                 .textFieldStyle(.plain)
                 .multilineTextAlignment(.center)
                 .glassTextEditor()
                 .frame(width: 180)
                 .onSubmit(commit)
-            Button("시작하기", action: commit)
+            Button("Get Started", action: commit)
                 .buttonStyle(.borderedProminent)
                 .disabled(draft.trimmingCharacters(in: .whitespaces).isEmpty)
             Spacer()
@@ -81,11 +81,11 @@ private struct ChatEntryView: View {
             Image(systemName: "bubble.left.and.bubble.right")
                 .font(.system(size: 30, weight: .light))
                 .foregroundStyle(.tertiary)
-            Text("채팅방")
+            Text("Chat Rooms")
                 .font(.system(.headline, design: .rounded))
                 .foregroundStyle(.secondary)
-            entryButton(icon: "plus", title: "새 채팅방 만들기") { mode = .create }
-            entryButton(icon: "magnifyingglass", title: "코드로 입장하기") { mode = .join }
+            entryButton(icon: "plus", title: "Create a room") { mode = .create }
+            entryButton(icon: "magnifyingglass", title: "Join with a code") { mode = .join }
             Spacer()
         }
     }
@@ -208,6 +208,7 @@ private struct ChatRoomView: View {
     @Bindable var store: ChatStore
     @State private var draft = ""
     @State private var copied = false
+    @FocusState private var inputFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
@@ -216,6 +217,8 @@ private struct ChatRoomView: View {
             messageList
             inputBar
         }
+        // 채팅방 진입 시 입력창에 포커스를 줘 커서가 바로 깜빡이게 한다.
+        .onAppear { inputFocused = true }
     }
 
     private var header: some View {
@@ -298,6 +301,7 @@ private struct ChatRoomView: View {
                 .textFieldStyle(.plain)
                 .lineLimit(1...3)
                 .glassTextEditor()
+                .focused($inputFocused)
                 .onSubmit(sendDraft)
             Button(action: sendDraft) {
                 Image(systemName: "arrow.up.circle.fill").font(.system(size: 24))
