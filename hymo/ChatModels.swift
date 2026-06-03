@@ -23,8 +23,8 @@ struct ChatMessage: Codable, Identifiable, Equatable {
 
     private static let timeFormatter: DateFormatter = {
         let f = DateFormatter()
-        f.dateFormat = "a h:mm"
-        f.locale = Locale(identifier: "ko_KR")
+        f.dateFormat = "h:mm a"
+        f.locale = Locale(identifier: "en_US")
         return f
     }()
 }

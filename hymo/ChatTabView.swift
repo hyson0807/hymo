@@ -115,14 +115,14 @@ private struct CreateRoomForm: View {
     @State private var password = ""
 
     var body: some View {
-        FormScaffold(title: "새 채팅방", onCancel: onCancel) {
-            LabeledField("방 이름") { TextField("예: 스터디방", text: $name).textFieldStyle(.plain) }
-            LabeledField("비밀번호") { SecureField("입장 비밀번호", text: $password).textFieldStyle(.plain) }
+        FormScaffold(title: "New Room", onCancel: onCancel) {
+            LabeledField("Room name") { TextField("e.g. Study Group", text: $name).textFieldStyle(.plain) }
+            LabeledField("Password") { SecureField("Room password", text: $password).textFieldStyle(.plain) }
         } action: {
             Button {
                 Task { await store.createRoom(name: name, password: password) }
             } label: {
-                Text(store.isBusy ? "만드는 중…" : "만들기").frame(maxWidth: .infinity)
+                Text(store.isBusy ? "Creating…" : "Create").frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
             .disabled(store.isBusy || name.trimmingCharacters(in: .whitespaces).isEmpty || password.isEmpty)
@@ -139,19 +139,19 @@ private struct JoinRoomForm: View {
     @State private var password = ""
 
     var body: some View {
-        FormScaffold(title: "코드로 입장", onCancel: onCancel) {
-            LabeledField("채팅방 코드") {
-                TextField("예: 4BW8Z5", text: $code)
+        FormScaffold(title: "Join with Code", onCancel: onCancel) {
+            LabeledField("Room code") {
+                TextField("e.g. 4BW8Z5", text: $code)
                     .textFieldStyle(.plain)
                     .textCase(.uppercase)
                     .autocorrectionDisabled()
             }
-            LabeledField("비밀번호") { SecureField("입장 비밀번호", text: $password).textFieldStyle(.plain) }
+            LabeledField("Password") { SecureField("Room password", text: $password).textFieldStyle(.plain) }
         } action: {
             Button {
                 Task { await store.joinRoom(code: code, password: password) }
             } label: {
-                Text(store.isBusy ? "입장 중…" : "입장하기").frame(maxWidth: .infinity)
+                Text(store.isBusy ? "Joining…" : "Join").frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
             .disabled(store.isBusy || code.trimmingCharacters(in: .whitespaces).isEmpty || password.isEmpty)
@@ -229,7 +229,7 @@ private struct ChatRoomView: View {
                     .lineLimit(1)
                 HStack(spacing: 4) {
                     if !store.isConnected {
-                        Text("연결 중…").font(.caption2).foregroundStyle(.tertiary)
+                        Text("Connecting…").font(.caption2).foregroundStyle(.tertiary)
                     } else {
                         Text(store.room?.code ?? "").font(.caption2.monospaced()).foregroundStyle(.secondary)
                     }
@@ -237,9 +237,9 @@ private struct ChatRoomView: View {
             }
             Spacer()
             Menu {
-                Button("코드 복사") { copyCode() }
+                Button("Copy code") { copyCode() }
                 Divider()
-                Button("나가기", role: .destructive) { store.leaveRoom() }
+                Button("Leave", role: .destructive) { store.leaveRoom() }
             } label: {
                 Image(systemName: "ellipsis").font(.system(size: 13, weight: .semibold)).frame(width: 28, height: 28)
             }
@@ -251,7 +251,7 @@ private struct ChatRoomView: View {
         .padding(.vertical, 8)
         .overlay(alignment: .top) {
             if copied {
-                Text("코드 복사됨").font(.caption2).padding(.horizontal, 8).padding(.vertical, 3)
+                Text("Code copied").font(.caption2).padding(.horizontal, 8).padding(.vertical, 3)
                     .background(Capsule().fill(.ultraThinMaterial)).padding(.top, 2)
             }
         }
@@ -297,7 +297,7 @@ private struct ChatRoomView: View {
 
     private var inputBar: some View {
         HStack(spacing: 8) {
-            TextField("메시지 입력…", text: $draft, axis: .vertical)
+            TextField("Message…", text: $draft, axis: .vertical)
                 .textFieldStyle(.plain)
                 .lineLimit(1...3)
                 .glassTextEditor()

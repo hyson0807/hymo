@@ -8,10 +8,10 @@ enum ChatAPIError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .roomNotFound: return "존재하지 않는 채팅방 코드입니다"
-        case .wrongPassword: return "비밀번호가 일치하지 않습니다"
+        case .roomNotFound: return "Room not found"
+        case .wrongPassword: return "Incorrect password"
         case .server(let msg): return msg
-        case .network: return "서버에 연결할 수 없습니다"
+        case .network: return "Can't reach the server"
         }
     }
 }
@@ -91,7 +91,7 @@ enum ChatAPI {
             throw ChatAPIError.wrongPassword
         default:
             let msg = (try? JSONDecoder().decode([String: String].self, from: data))?["message"]
-            throw ChatAPIError.server(msg ?? "요청 실패 (\(http.statusCode))")
+            throw ChatAPIError.server(msg ?? "Request failed (\(http.statusCode))")
         }
     }
 }

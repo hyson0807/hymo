@@ -201,7 +201,7 @@ final class ChatStore {
         } catch let e as ChatAPIError {
             errorMessage = e.errorDescription
         } catch {
-            errorMessage = "오류가 발생했습니다"
+            errorMessage = "Something went wrong"
         }
     }
 

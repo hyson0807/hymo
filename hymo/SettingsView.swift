@@ -61,9 +61,9 @@ struct SettingsView: View {
             }
 
             Section {
-                TextField("닉네임", text: $chatIdentity.nickname, prompt: Text("채팅에서 보일 이름"))
+                TextField("Nickname", text: $chatIdentity.nickname, prompt: Text("Name shown in chat"))
                 // 표시 상태 = 앱 설정 ON && OS 권한 허용. OS가 꺼져 있으면 ON으로 보이지 않는다.
-                Toggle("새 메시지 알림", isOn: Binding(
+                Toggle("New message notifications", isOn: Binding(
                     get: { chatIdentity.notificationsEnabled && systemAuthorized },
                     set: { on in
                         chatIdentity.notificationsEnabled = on
@@ -74,7 +74,7 @@ struct SettingsView: View {
             } header: {
                 Text("Chat")
             } footer: {
-                Text("시스템 설정에서 이 앱의 알림이 꺼져 있으면 받을 수 없어요. 토글을 켜면 시스템 설정으로 안내합니다.")
+                Text("You won't get notifications if they're turned off for this app in System Settings. Turning this on takes you there.")
             }
 
             Section("Updates") {
