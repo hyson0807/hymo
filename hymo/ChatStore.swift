@@ -16,8 +16,12 @@ final class ChatStore {
     var errorMessage: String?
     /// 생성/입장 진행 중 표시.
     var isBusy = false
+    /// 위로 더 불러올 과거 메시지가 있는지(마지막 페이지가 가득 찼는지로 추정).
+    var hasMoreHistory = false
 
     private var socket: SocketIOClient?
+    private var isLoadingOlder = false
+    private let pageSize = 50
     private let identity = ChatIdentity.shared
 
     init() {
@@ -61,6 +65,7 @@ final class ChatStore {
     func leaveRoom() {
         disconnect()
         messages = []
+        hasMoreHistory = false
         room = nil
         errorMessage = nil
     }
@@ -102,14 +107,31 @@ final class ChatStore {
     @MainActor
     private func setupRoom(_ joined: JoinedRoom) {
         messages = []
+        hasMoreHistory = false
         Task { await loadHistory(for: joined) }
         startSocket(for: joined)
     }
 
     @MainActor
     private func loadHistory(for room: JoinedRoom) async {
-        if let history = try? await ChatAPI.messages(code: room.code, token: room.token) {
+        if let history = try? await ChatAPI.messages(code: room.code, token: room.token, limit: pageSize) {
             merge(history)
+            hasMoreHistory = history.count == pageSize
+        }
+    }
+
+    /// 위로 스크롤 시 가장 오래된 메시지보다 과거의 한 페이지를 불러와 앞에 붙인다.
+    @MainActor
+    func loadOlder() async {
+        guard let room, hasMoreHistory, !isLoadingOlder,
+              let cursor = messages.first?.id else { return }
+        isLoadingOlder = true
+        defer { isLoadingOlder = false }
+        if let older = try? await ChatAPI.messages(
+            code: room.code, token: room.token, limit: pageSize, cursor: cursor
+        ) {
+            merge(older)
+            hasMoreHistory = older.count == pageSize
         }
     }
 

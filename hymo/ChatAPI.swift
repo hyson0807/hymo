@@ -39,9 +39,14 @@ enum ChatAPI {
         return try await post("/rooms/\(encode(code))/join", body: body)
     }
 
-    /// GET /rooms/:code/messages — 최근 메시지 히스토리.
-    static func messages(code: String, token: String, limit: Int = 50) async throws -> [ChatMessage] {
-        try await get("/rooms/\(encode(code))/messages?limit=\(limit)&token=\(encode(token))")
+    /// GET /rooms/:code/messages — 메시지 히스토리.
+    /// cursor(메시지 id)를 주면 그보다 과거의 limit개를 반환(위로 더 불러오기).
+    static func messages(
+        code: String, token: String, limit: Int = 50, cursor: String? = nil
+    ) async throws -> [ChatMessage] {
+        var path = "/rooms/\(encode(code))/messages?limit=\(limit)&token=\(encode(token))"
+        if let cursor { path += "&cursor=\(encode(cursor))" }
+        return try await get(path)
     }
 
     // MARK: - 공통

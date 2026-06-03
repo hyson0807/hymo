@@ -259,6 +259,21 @@ private struct ChatRoomView: View {
         return ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(spacing: 6) {
+                    // 맨 위 도달 시 과거 페이지 로드. 로드 후 직전 최상단 메시지로 스크롤을 고정해
+                    // 위치가 튀지 않게 한다.
+                    if store.hasMoreHistory {
+                        ProgressView()
+                            .controlSize(.small)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 4)
+                            .onAppear {
+                                let anchor = store.messages.first?.id
+                                Task {
+                                    await store.loadOlder()
+                                    if let anchor { proxy.scrollTo(anchor, anchor: .top) }
+                                }
+                            }
+                    }
                     ForEach(store.messages) { message in
                         MessageBubble(message: message, isMine: message.senderId == myDeviceId)
                             .id(message.id)
@@ -268,7 +283,8 @@ private struct ChatRoomView: View {
                 .padding(.vertical, 8)
             }
             .scrollBounceBehavior(.basedOnSize)
-            .onChange(of: store.messages.count) { _, _ in
+            // 끝에 새 메시지가 붙을 때만 맨 아래로 스크롤(과거 prepend 시엔 last가 그대로라 안 움직임).
+            .onChange(of: store.messages.last?.id) { _, _ in
                 if let last = store.messages.last {
                     withAnimation(.easeOut(duration: 0.2)) { proxy.scrollTo(last.id, anchor: .bottom) }
                 }
