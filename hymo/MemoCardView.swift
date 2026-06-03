@@ -5,6 +5,10 @@ import SwiftUI
 private class _CardResizeDragView: NSView {
     weak var coordinator: CardResizeNSView.Coordinator?
 
+    // 패널의 isMovableByWindowBackground 때문에 이 핸들 드래그가 창 이동으로
+    // 새어나가는 것을 막는다 (메모 높이 조절 중 창이 따라 움직이는 버그 방지).
+    override var mouseDownCanMoveWindow: Bool { false }
+
     override func resetCursorRects() {
         discardCursorRects()
         addCursorRect(bounds, cursor: .resizeUpDown)
