@@ -5,6 +5,9 @@ import Observation
 /// 단일 방 모델: 입장한 방 하나만 유지(UserDefaults 영속), 나가면 비움.
 @Observable
 final class ChatStore {
+    /// 앱 전역에서 하나만 사용(소켓을 백그라운드에서도 유지해야 하므로).
+    static let shared = ChatStore()
+
     private static let roomKey = "chatCurrentRoom"
 
     /// 현재 입장 중인 방. nil 이면 진입 화면(생성/입장) 표시.
@@ -19,12 +22,22 @@ final class ChatStore {
     /// 위로 더 불러올 과거 메시지가 있는지(마지막 페이지가 가득 찼는지로 추정).
     var hasMoreHistory = false
 
+    /// 팝업 패널이 화면에 보이는지 (AppDelegate가 갱신).
+    var isPanelForeground = true
+    /// 현재 탭이 Chat 인지 (ContentView가 갱신).
+    var isChatTabActive = false
+    /// 알림 탭 → Chat 탭으로 전환 요청 (ContentView가 관찰).
+    var pendingOpenChat = false
+
+    /// 사용자가 지금 채팅방을 실제로 보고 있는지. 아니면 새 메시지에 알림을 띄운다.
+    private var isViewingChat: Bool { isPanelForeground && isChatTabActive }
+
     private var socket: SocketIOClient?
     private var isLoadingOlder = false
     private let pageSize = 50
     private let identity = ChatIdentity.shared
 
-    init() {
+    private init() {
         if let data = UserDefaults.standard.data(forKey: Self.roomKey),
            let saved = try? JSONDecoder().decode(JoinedRoom.self, from: data) {
             room = saved
@@ -72,7 +85,8 @@ final class ChatStore {
 
     // MARK: - 연결 수명주기
 
-    /// 채팅 탭 진입 시 호출 — 방이 있으면 히스토리 로드 후 소켓 연결.
+    /// 앱 시작/입장 시 호출 — 방이 있으면 히스토리 로드 후 소켓 연결.
+    /// 한 번 연결되면 탭/패널과 무관하게 백그라운드로 유지(알림 수신용), 나가기 전까지 끊지 않는다.
     @MainActor
     func connectIfNeeded() {
         guard let room, socket == nil else { return }
@@ -95,6 +109,10 @@ final class ChatStore {
         socket?.emit(event: "chat:send-message", payload: ["content": trimmed])
     }
 
+    /// 알림 탭으로 들어온 요청 — ContentView가 받아 Chat 탭으로 전환.
+    @MainActor
+    func requestOpenChat() { pendingOpenChat = true }
+
     // MARK: - 내부
 
     @MainActor
@@ -103,11 +121,12 @@ final class ChatStore {
         setupRoom(joined)
     }
 
-    /// 히스토리 로드 + 소켓 연결 (입장/탭 진입 공용).
+    /// 히스토리 로드 + 소켓 연결 (입장/앱 시작 공용).
     @MainActor
     private func setupRoom(_ joined: JoinedRoom) {
         messages = []
         hasMoreHistory = false
+        ChatNotifier.requestAuthorization()
         Task { await loadHistory(for: joined) }
         startSocket(for: joined)
     }
@@ -141,9 +160,18 @@ final class ChatStore {
         client.onConnected = { [weak self] in self?.isConnected = true }
         client.onDisconnected = { [weak self] in self?.isConnected = false }
         client.onEvent = { [weak self] name, data in
-            guard name == "chat:new-message",
+            guard let self, name == "chat:new-message",
                   let message = try? JSONDecoder().decode(ChatMessage.self, from: data) else { return }
-            self?.append(message)
+            self.append(message)
+            // 내가 보낸 게 아니고, 지금 채팅을 보고 있지 않으면 로컬 알림.
+            if message.senderId != self.identity.deviceId,
+               !self.isViewingChat,
+               let room = self.room {
+                ChatNotifier.post(
+                    roomId: message.roomId, roomName: room.name,
+                    sender: message.senderName, body: message.content
+                )
+            }
         }
         socket = client
         client.connect()

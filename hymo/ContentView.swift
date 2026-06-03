@@ -46,7 +46,7 @@ struct ContentView: View {
 
     @State private var store = MemoStore()
     @State private var serverMonitor = ServerMonitor()
-    @State private var chatStore = ChatStore()
+    @State private var chatStore = ChatStore.shared
     @State private var activeTab: AppTab = .memos
     @State private var serverHeights: [String: CGFloat] = [:]
     @FocusState private var focusedMemoID: UUID?
@@ -232,15 +232,18 @@ struct ContentView: View {
             } else {
                 serverMonitor.stopAutoRefresh()
             }
-            if tab == .chat {
-                chatStore.connectIfNeeded()
-            } else {
-                chatStore.disconnect()
+            // 소켓은 백그라운드로 상시 유지(알림용). 탭은 "지금 채팅을 보는 중"인지만 알려준다.
+            chatStore.isChatTabActive = (tab == .chat)
+        }
+        .onChange(of: chatStore.pendingOpenChat) { _, pending in
+            // 알림 클릭 → Chat 탭으로 전환.
+            if pending {
+                activeTab = .chat
+                chatStore.pendingOpenChat = false
             }
         }
         .onDisappear {
             serverMonitor.stopAutoRefresh()
-            chatStore.disconnect()
         }
     }
 

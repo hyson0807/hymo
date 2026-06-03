@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import UserNotifications
 
 @main
 struct hymoApp: App {
@@ -17,7 +18,7 @@ struct hymoApp: App {
 
 // MARK: - 메뉴바 아이콘 + 이동 가능한 떠 있는 패널 관리
 
-final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, UNUserNotificationCenterDelegate {
 
     private var statusItem: NSStatusItem?
     private var panel: HymoPanel?
@@ -28,9 +29,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Dock 아이콘 없는 메뉴바 앱
         NSApp.setActivationPolicy(.accessory)
+        UNUserNotificationCenter.current().delegate = self
         setupStatusItem()
         setupPanel()
         showPanel() // 시작 시 한 번 띄워준다
+        // 입장 중인 방이 있으면 백그라운드에서도 소켓 유지(알림 수신).
+        ChatStore.shared.connectIfNeeded()
     }
 
     // MARK: 메뉴바 아이콘
@@ -89,12 +93,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         positionPanel(panel)
         panel.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+        ChatStore.shared.isPanelForeground = true
     }
 
     private func hidePanel() {
         guard let panel else { return }
         saveOrigin(panel.frame.origin)
         panel.orderOut(nil)
+        ChatStore.shared.isPanelForeground = false
     }
 
     // MARK: 위치 (마지막 위치 기억, 없으면 메뉴바 아이콘 아래)
@@ -143,6 +149,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func windowDidMove(_ notification: Notification) {
         guard let panel else { return }
         saveOrigin(panel.frame.origin)
+    }
+
+    // MARK: UNUserNotificationCenterDelegate
+
+    // 앱이 떠 있는 동안(다른 탭을 보는 중 등)에도 배너를 표시.
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        completionHandler([.banner, .sound])
+    }
+
+    // 알림 클릭 → 패널 열고 Chat 탭으로.
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        Task { @MainActor in
+            self.showPanel()
+            ChatStore.shared.requestOpenChat()
+        }
+        completionHandler()
     }
 }
 
