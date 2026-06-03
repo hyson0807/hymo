@@ -8,6 +8,7 @@ final class ChatIdentity {
 
     private static let deviceIdKey = "chatDeviceId"
     private static let nicknameKey = "chatNickname"
+    private static let notificationsEnabledKey = "chatNotificationsEnabled"
 
     /// 최초 1회 생성 후 고정.
     let deviceId: String
@@ -15,6 +16,11 @@ final class ChatIdentity {
     /// 모든 방에서 쓰는 표시 이름. Settings에서 수정.
     var nickname: String {
         didSet { UserDefaults.standard.set(nickname, forKey: Self.nicknameKey) }
+    }
+
+    /// 새 메시지 로컬 알림 on/off (Settings에서 토글). 기본 켜짐.
+    var notificationsEnabled: Bool {
+        didSet { UserDefaults.standard.set(notificationsEnabled, forKey: Self.notificationsEnabledKey) }
     }
 
     var hasNickname: Bool { !nickname.trimmingCharacters(in: .whitespaces).isEmpty }
@@ -29,5 +35,6 @@ final class ChatIdentity {
             deviceId = new
         }
         nickname = defaults.string(forKey: Self.nicknameKey) ?? ""
+        notificationsEnabled = defaults.object(forKey: Self.notificationsEnabledKey) as? Bool ?? true
     }
 }

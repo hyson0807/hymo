@@ -1,6 +1,7 @@
 import ServiceManagement
 import Sparkle
 import SwiftUI
+import UserNotifications
 
 // MARK: - 설정 창을 다른 앱 위로 띄우는 구성기
 
@@ -31,6 +32,10 @@ struct SettingsView: View {
     var updaterViewModel: UpdaterViewModel
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
     @Bindable private var chatIdentity = ChatIdentity.shared
+    /// OS 알림 권한 허용 여부. 거부 상태면 앱 토글이 ON으로 보이지 않게 한다.
+    @State private var systemAuthorized = false
+    /// 최초 권한 읽기 완료 여부 — 최초 읽기를 "권한 켜짐 전이"로 오인하지 않기 위함.
+    @State private var didInitialAuthRead = false
 
     private var appVersion: String {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
@@ -55,8 +60,21 @@ struct SettingsView: View {
                     }
             }
 
-            Section("Chat") {
+            Section {
                 TextField("닉네임", text: $chatIdentity.nickname, prompt: Text("채팅에서 보일 이름"))
+                // 표시 상태 = 앱 설정 ON && OS 권한 허용. OS가 꺼져 있으면 ON으로 보이지 않는다.
+                Toggle("새 메시지 알림", isOn: Binding(
+                    get: { chatIdentity.notificationsEnabled && systemAuthorized },
+                    set: { on in
+                        chatIdentity.notificationsEnabled = on
+                        // 켜려는데 OS 권한이 없으면 요청/시스템 설정 안내(앱이 직접 못 켬).
+                        if on && !systemAuthorized { ChatNotifier.ensureSystemPermission() }
+                    }
+                ))
+            } header: {
+                Text("Chat")
+            } footer: {
+                Text("시스템 설정에서 이 앱의 알림이 꺼져 있으면 받을 수 없어요. 토글을 켜면 시스템 설정으로 안내합니다.")
             }
 
             Section("Updates") {
@@ -96,5 +114,26 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .frame(width: 320)
         .background(SettingsWindowConfigurator())
+        .onAppear { refreshAuthStatus() }
+        // 시스템 설정에 다녀와 앱으로 돌아오면 권한 상태 다시 반영.
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            refreshAuthStatus()
+        }
+    }
+
+    /// 현재 OS 알림 권한 상태를 읽어 systemAuthorized 갱신.
+    /// 시스템 설정에서 막 권한을 켠 경우(거부/미정 → 허용)엔 앱 토글도 자동 ON.
+    private func refreshAuthStatus() {
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            let ok = settings.authorizationStatus == .authorized
+                || settings.authorizationStatus == .provisional
+            DispatchQueue.main.async {
+                if didInitialAuthRead, ok, !systemAuthorized {
+                    chatIdentity.notificationsEnabled = true
+                }
+                systemAuthorized = ok
+                didInitialAuthRead = true
+            }
+        }
     }
 }

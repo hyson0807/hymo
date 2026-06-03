@@ -163,8 +163,9 @@ final class ChatStore {
             guard let self, name == "chat:new-message",
                   let message = try? JSONDecoder().decode(ChatMessage.self, from: data) else { return }
             self.append(message)
-            // 내가 보낸 게 아니고, 지금 채팅을 보고 있지 않으면 로컬 알림.
-            if message.senderId != self.identity.deviceId,
+            // 알림이 켜져 있고, 내가 보낸 게 아니고, 지금 채팅을 보고 있지 않으면 로컬 알림.
+            if self.identity.notificationsEnabled,
+               message.senderId != self.identity.deviceId,
                !self.isViewingChat,
                let room = self.room {
                 ChatNotifier.post(
