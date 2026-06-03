@@ -119,7 +119,7 @@ cat > "$DL/appcast.xml" <<EOF
             <sparkle:shortVersionString>${NEW_SHORT}</sparkle:shortVersionString>
             <pubDate>${PUBDATE}</pubDate>
             <enclosure url="https://hyson.kr/downloads/hymo_update.zip" length="${LEN}" type="application/octet-stream" sparkle:edSignature="${EDSIG}"/>
-            <sparkle:minimumSystemVersion>15.7</sparkle:minimumSystemVersion>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
         </item>
     </channel>
 </rss>
