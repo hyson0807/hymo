@@ -70,12 +70,12 @@ struct ContentView: View {
     private let minWindowHeight: CGFloat = 120
     private let defaultWindowWidth: CGFloat = 320
     private let minWindowWidth: CGFloat = 260
-    private let maxWindowWidth: CGFloat = 600
+    private let maxWindowWidth: CGFloat = 900
     private let chatWindowHeight: CGFloat = 420
     private let memoListPadding: CGFloat = GlassTheme.cardSpacing
 
     private var maxWindowHeight: CGFloat {
-        (NSScreen.main?.visibleFrame.height ?? 600) * 0.85
+        (NSScreen.main?.visibleFrame.height ?? 600) * 0.95
     }
 
     private var effectiveWidth: CGFloat {

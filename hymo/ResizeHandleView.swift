@@ -23,6 +23,14 @@ struct ResizeGripShape: Shape {
 private class _ResizeDragView: NSView {
     weak var coordinator: ResizeHandleNSView.Coordinator?
 
+    // 핵심: 이 뷰 위에서의 드래그는 "창 이동"이 아니라 "리사이즈"여야 한다.
+    // 패널이 isMovableByWindowBackground=true 라서, 기본값(true)을 두면
+    // 드래그가 창 이동으로 가로채여 리사이즈가 간헐적으로 안 먹는다.
+    override var mouseDownCanMoveWindow: Bool { false }
+
+    // 떠 있는(nonactivating) 패널이 키 윈도우가 아닐 때도 첫 드래그가 바로 먹히게.
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
     override func resetCursorRects() {
         discardCursorRects()
         // Use a diagonal resize cursor created from SF Symbol
@@ -210,7 +218,7 @@ struct ResizeHandleView: View {
                 maxHeight: maxHeight,
                 defaultWidth: defaultWidth
             )
-            .frame(width: 20, height: 20)
+            .frame(width: 28, height: 28)
         }
         .onHover { hovering in
             isHovering = hovering
